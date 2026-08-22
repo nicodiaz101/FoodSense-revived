@@ -3,12 +3,12 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCRalCf85TZ2fiLR9Qt6jzfGFCPtw-yP-c",
-  authDomain: "foodsense-c426d.firebaseapp.com",
-  projectId: "foodsense-c426d",
-  storageBucket: "foodsense-c426d.firebasestorage.app",
-  messagingSenderId: "456940297073",
-  appId: "1:456940297073:web:01d91bef7aa4090ec774d0",
+  apiKey: "AIzaSyChxgGBbkGYc4H0LdMaeEqoVikZ_dTLdro",
+  authDomain: "foodsense-revive.firebaseapp.com",
+  projectId: "foodsense-revive",
+  storageBucket: "foodsense-revive.firebasestorage.app",
+  messagingSenderId: "392452066897",
+  appId: "1:392452066897:web:d82ad5a7138f3e926b7270",
 };
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];

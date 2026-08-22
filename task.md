@@ -3,7 +3,7 @@
 ## 📋 Estado del Proyecto
 
 - [x] **Arquitectura & Definición:** Generar `SPECS.md`, `ROADMAP.MD`, `task.md` y `TEST_PLAN.md`.
-- [ ] **Fase 1: Infraestructura & Base de Datos Propia**
+- [x] **Fase 1: Infraestructura & Base de Datos Propia**
 - [ ] **Fase 2: Integración de IA con Google Gemini**
 - [ ] **Fase 3: Refinamiento de Despensa & Multi-Tenancy**
 - [ ] **Fase 4: Dashboard de Impacto & Alertas**
@@ -13,12 +13,12 @@
 ---
 
 ## 🏗️ Fase 1: Infraestructura & Base de Datos Propia
-- [ ] **TASK-101:** Crear proyecto nuevo en Supabase bajo la cuenta del alumno/equipo.
-- [ ] **TASK-102:** Ejecutar script DDL (`SPECS.md` Sección 4.2) en el SQL Editor de Supabase para crear tablas `products`, `product_events`, `households` y `household_members`.
-- [ ] **TASK-103:** Verificar activación de Row Level Security (RLS) y políticas de aislamiento de datos en Supabase.
-- [ ] **TASK-104:** Configurar variables de entorno `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` en `web/.env.local`.
-- [ ] **TASK-105:** Mantener autenticación en Firebase Auth (Login con Google) y configurar la integración Third-Party JWT en Supabase.
-- [ ] **TASK-106:** Actualizar `src/lib/use-inventory.ts` para que todas las operaciones CRUD lean y escriban directamente en la nueva base de datos Supabase.
+- [x] **TASK-101:** Crear proyecto nuevo en Supabase bajo la cuenta del alumno/equipo.
+- [x] **TASK-102:** Ejecutar script DDL (`SPECS.md` Sección 4.2) en el SQL Editor de Supabase para crear tablas `products`, `product_events`, `households` y `household_members`.
+- [x] **TASK-103:** Verificar activación de Row Level Security (RLS) y políticas de aislamiento de datos en Supabase.
+- [x] **TASK-104:** Configurar variables de entorno `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` en `web/.env.local`.
+- [x] **TASK-105:** Mantener autenticación en Firebase Auth (Login con Google) y configurar la integración Third-Party JWT en Supabase.
+- [x] **TASK-106:** Actualizar `src/lib/use-inventory.ts` para que todas las operaciones CRUD lean y escriban directamente en la nueva base de datos Supabase.
 
 ---
 

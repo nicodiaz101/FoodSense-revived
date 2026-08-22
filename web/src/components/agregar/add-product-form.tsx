@@ -199,7 +199,7 @@ export function AddProductForm() {
     setExpiryDate(addDaysToToday(getSuggestedExpiryDays(category, resetState)));
   }
 
-  function handleSaveAndAddAnother() {
+  async function handleSaveAndAddAnother() {
     if (!name.trim()) {
       setNameError(true);
       return;
@@ -208,7 +208,7 @@ export function AddProductForm() {
     const existing = findMatchingProduct(name, expiryDate);
     if (existing) {
       const newQty = (existing.quantity ?? 1) + 1;
-      updateProduct(existing.id, { quantity: newQty });
+      await updateProduct(existing.id, { quantity: newQty });
       setSessionProducts((prev) => {
         const inSession = prev.find((p) => p.id === existing.id);
         if (inSession) {
@@ -237,7 +237,7 @@ export function AddProductForm() {
         expiryDate,
         quantity: 1,
       };
-      addProduct(newItem);
+      await addProduct(newItem);
       setSessionProducts((prev) => [...prev, newItem]);
     }
 
@@ -253,7 +253,7 @@ export function AddProductForm() {
     setExpiryDate(addDaysToToday(getSuggestedExpiryDays(category, resetState)));
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!name.trim()) {
       setNameError(true);
       return;
@@ -262,7 +262,7 @@ export function AddProductForm() {
     const existing = findMatchingProduct(name, expiryDate);
     if (existing) {
       const newQty = (existing.quantity ?? 1) + 1;
-      updateProduct(existing.id, { quantity: newQty });
+      await updateProduct(existing.id, { quantity: newQty });
       const mergedItem: SessionItem = {
         id: existing.id,
         name: existing.name,
@@ -291,7 +291,7 @@ export function AddProductForm() {
         expiryDate,
         quantity: 1,
       };
-      addProduct(finalItem);
+      await addProduct(finalItem);
       if (sessionProducts.length > 0) {
         setSummaryItems([...sessionProducts, finalItem]);
       } else {

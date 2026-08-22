@@ -31,7 +31,7 @@ export function useInventory() {
       1,
     ).toISOString();
 
-    const [{ data: rows }, { data: events }] = await Promise.all([
+    const [{ data: rows, error: rowsError }, { data: events, error: eventsError }] = await Promise.all([
       supabase
         .from("products")
         .select("id, name, category, state, expires_at, quantity")
@@ -41,6 +41,13 @@ export function useInventory() {
         .select("type")
         .gte("occurred_at", startOfMonth),
     ]);
+
+    if (rowsError) {
+      console.error("[useInventory] Error cargando productos de Supabase:", rowsError);
+    }
+    if (eventsError) {
+      console.error("[useInventory] Error cargando eventos de Supabase:", eventsError);
+    }
 
     if (rows) setProducts(rows.map(rowToProduct));
     if (events) {
@@ -64,13 +71,16 @@ export function useInventory() {
 
   async function addProduct(product: Product) {
     const uid = auth.currentUser?.uid;
-    if (!uid) return;
+    if (!uid) {
+      console.warn("[useInventory] No hay usuario logueado en Firebase");
+      return;
+    }
 
     setProducts((prev) =>
       [...prev, product].sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry),
     );
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("products")
       .insert({
         user_id: uid,
@@ -82,6 +92,11 @@ export function useInventory() {
       })
       .select()
       .single();
+
+    if (error) {
+      console.error("[useInventory] Error al insertar producto en Supabase:", error);
+      throw error;
+    }
 
     if (data) {
       const saved = rowToProduct(data);

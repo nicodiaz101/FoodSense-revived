@@ -60,8 +60,8 @@ grant select, insert                  on product_events to anon, authenticated;
 create policy "products_firebase_issuer"
   on products as restrictive to anon, authenticated
   using (
-    auth.jwt()->>'iss' = 'https://securetoken.google.com/foodsense-c426d'
-    and auth.jwt()->>'aud' = 'foodsense-c426d'
+    auth.jwt()->>'iss' = 'https://securetoken.google.com/foodsense-revive'
+    and auth.jwt()->>'aud' = 'foodsense-revive'
   );
 
 create policy "products_select"
@@ -86,8 +86,8 @@ create policy "products_delete"
 create policy "events_firebase_issuer"
   on product_events as restrictive to anon, authenticated
   using (
-    auth.jwt()->>'iss' = 'https://securetoken.google.com/foodsense-c426d'
-    and auth.jwt()->>'aud' = 'foodsense-c426d'
+    auth.jwt()->>'iss' = 'https://securetoken.google.com/foodsense-revive'
+    and auth.jwt()->>'aud' = 'foodsense-revive'
   );
 
 create policy "events_select"

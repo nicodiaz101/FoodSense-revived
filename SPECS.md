@@ -106,7 +106,7 @@ create extension if not exists "pgcrypto";
 create table if not exists households (
   id uuid primary key default gen_random_uuid(),
   name text not null default 'Mi Hogar',
-  created_by uuid not null references auth.users(id) on delete cascade,
+  created_by text not null,
   created_at timestamptz not null default now()
 );
 
@@ -114,7 +114,7 @@ create table if not exists households (
 create table if not exists household_members (
   id uuid primary key default gen_random_uuid(),
   household_id uuid not null references households(id) on delete cascade,
-  user_id uuid not null references auth.users(id) on delete cascade,
+  user_id text not null,
   role text not null default 'member' check (role in ('owner', 'admin', 'member')),
   joined_at timestamptz not null default now(),
   unique (household_id, user_id)
@@ -124,14 +124,12 @@ create table if not exists household_members (
 create table if not exists products (
   id uuid primary key default gen_random_uuid(),
   household_id uuid references households(id) on delete cascade,
-  user_id uuid not null references auth.users(id) on delete cascade,
+  user_id text not null,
   name text not null,
-  category text not null check (
-    category in ('lacteos', 'carnes', 'verduras', 'frutas', 'panificados', 'bebidas', 'huevos', 'conservas')
-  ),
-  state text not null default 'cerrado' check (state in ('cerrado', 'abierto', 'congelado')),
+  category text not null,
+  state text not null default 'cerrado',
   expires_at date not null,
-  quantity integer not null default 1,
+  quantity integer default 1,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -142,12 +140,12 @@ create index if not exists idx_products_household_expires on products(household_
 -- 4. Registro de Eventos para Analíticas de Desperdicio / Ahorro
 create table if not exists product_events (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
+  user_id text not null,
   household_id uuid references households(id) on delete cascade,
-  product_name text not null,
-  category text not null,
+  product_name text,
+  category text,
   type text not null check (type in ('consumed', 'wasted')),
-  quantity integer not null default 1,
+  quantity integer default 1,
   estimated_cost_ars numeric(10,2) default 0.00,
   occurred_at timestamptz not null default now()
 );
@@ -173,24 +171,43 @@ alter table household_members enable row level security;
 alter table products enable row level security;
 alter table product_events enable row level security;
 
+grant select, insert, update, delete on products to anon, authenticated;
+grant select, insert, update, delete on product_events to anon, authenticated;
+grant select, insert, update, delete on households to anon, authenticated;
+grant select, insert, update, delete on household_members to anon, authenticated;
+
 -- Políticas de Seguridad (Aislamiento por Usuario y Hogar basado en Firebase UID)
+create policy "products_firebase_issuer"
+  on products as restrictive to anon, authenticated
+  using (
+    auth.jwt()->>'iss' = 'https://securetoken.google.com/foodsense-revive'
+    and auth.jwt()->>'aud' = 'foodsense-revive'
+  );
+
+create policy "events_firebase_issuer"
+  on product_events as restrictive to anon, authenticated
+  using (
+    auth.jwt()->>'iss' = 'https://securetoken.google.com/foodsense-revive'
+    and auth.jwt()->>'aud' = 'foodsense-revive'
+  );
+
 create policy "users_access_own_households"
   on households for all
-  using (created_by::text = (auth.jwt()->>'sub'));
+  using (created_by = (auth.jwt()->>'sub'));
 
 create policy "members_access_household_members"
   on household_members for all
-  using (user_id::text = (auth.jwt()->>'sub'));
+  using (user_id = (auth.jwt()->>'sub'));
 
 create policy "users_manage_own_products"
   on products for all
-  using (user_id::text = (auth.jwt()->>'sub'))
-  with check (user_id::text = (auth.jwt()->>'sub'));
+  using (user_id = (auth.jwt()->>'sub'))
+  with check (user_id = (auth.jwt()->>'sub'));
 
 create policy "users_manage_own_events"
   on product_events for all
-  using (user_id::text = (auth.jwt()->>'sub'))
-  with check (user_id::text = (auth.jwt()->>'sub'));
+  using (user_id = (auth.jwt()->>'sub'))
+  with check (user_id = (auth.jwt()->>'sub'));
 ```
 
 ---
