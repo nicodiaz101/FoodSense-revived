@@ -23,11 +23,11 @@
 ---
 
 ## 🤖 Fase 2: Motor de IA de Voz con Google Gemini
-- [ ] **TASK-201:** Obtener `GEMINI_API_KEY` en Google AI Studio y configurarla en `web/.env.local`.
-- [ ] **TASK-202:** Instalar SDK oficial `@google/genai` o `@google/generative-ai` en el paquete web.
-- [ ] **TASK-203:** Implementar Route Handler `web/src/app/api/voice/actions/route.ts` que reciba audio base64, procese con Gemini 2.0 Flash / 1.5 Flash y retorne transcripción + operaciones estructuradas JSON.
-- [ ] **TASK-204:** Actualizar `src/components/voz/voice-button.tsx` para reemplazar el endpoint antiguo de AWS (`execute-api.us-east-2.amazonaws.com`) por `/api/voice/actions`.
-- [ ] **TASK-205:** Validar modal de revisión `VoiceActionModal` con casos de uso: "Agregar 3 leches", "Eliminar yogur", "Cambiar vencimiento de tomate".
+- [ ] **TASK-201:** Obtener `GEMINI_API_KEY` en Google AI Studio y configurarla en `web/.env.local` y Vercel.
+- [x] **TASK-202:** Instalar SDK oficial `@google/generative-ai` en el paquete web.
+- [x] **TASK-203:** Implementar Route Handler `web/src/app/api/voice/actions/route.ts` que reciba audio base64, procese con Gemini 2.0 Flash y retorne transcripción + operaciones estructuradas JSON.
+- [x] **TASK-204:** Actualizar `src/components/voz/voice-button.tsx` para reemplazar el endpoint antiguo de AWS por `/api/voice/actions`.
+- [ ] **TASK-205:** Validar modal de revisión `VoiceActionModal` con casos de uso en vivo.
 
 ---
 
