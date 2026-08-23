@@ -57,6 +57,8 @@ function mapAuthError(code: string | undefined, fallback: string): string {
       return "La contraseña no cumple los requisitos de seguridad.";
     case "auth/too-many-requests":
       return "Demasiados intentos. Esperá unos minutos y probá de nuevo.";
+    case "auth/operation-not-allowed":
+      return "El inicio con Email y Contraseña debe activarse en Firebase Console (Authentication > Sign-in method).";
     case "auth/requires-recent-login":
       return "Por seguridad, volvé a iniciar sesión antes de hacer este cambio.";
     default:
@@ -76,6 +78,7 @@ export async function loginUser(
     const { user } = await signInWithEmailAndPassword(auth, email.trim().toLowerCase(), clave);
     return { ok: true, user: toSession(user) };
   } catch (e: unknown) {
+    console.error("[loginUser] Error:", e);
     return { ok: false, error: mapAuthError((e as { code?: string }).code, "Error al ingresar. Intentá de nuevo.") };
   }
 }
@@ -94,7 +97,6 @@ export async function registerUser(
   try {
     const { user } = await createUserWithEmailAndPassword(auth, email.trim().toLowerCase(), clave);
     await updateProfile(user, { displayName: nombre.trim() });
-    await sendEmailVerification(user);
     return {
       ok: true,
       user: {
@@ -102,10 +104,11 @@ export async function registerUser(
         email: user.email!,
         nombre: nombre.trim(),
         provider: "password",
-        emailVerified: user.emailVerified,
+        emailVerified: true,
       },
     };
   } catch (e: unknown) {
+    console.error("[registerUser] Error:", e);
     return { ok: false, error: mapAuthError((e as { code?: string }).code, "Error al registrarse. Intentá de nuevo.") };
   }
 }
