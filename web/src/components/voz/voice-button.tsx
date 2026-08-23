@@ -51,7 +51,10 @@ export function VoiceButton({ onAction }: Props) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ audio_base64, mime_type }),
           });
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          if (!res.ok) {
+            const errData = await res.json().catch(() => null);
+            throw new Error(errData?.error || `Error del servidor (HTTP ${res.status})`);
+          }
           const body = await res.json();
           const ops: VoiceAction[] = Array.isArray(body?.resultado?.operaciones)
             ? body.resultado.operaciones
@@ -59,8 +62,9 @@ export function VoiceButton({ onAction }: Props) {
           const transcripcion: string | undefined = body?.transcripcion;
           setRecState("idle");
           onAction(ops, transcripcion);
-        } catch {
-          setErrorMsg("No se pudo procesar el audio. Intentá de nuevo.");
+        } catch (err) {
+          console.error("Error al procesar audio:", err);
+          setErrorMsg(err instanceof Error ? err.message : "No se pudo procesar el audio.");
           setRecState("error");
         }
       };
