@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.5-flash",
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema: schemaConfig,
@@ -142,9 +142,9 @@ Reglas de fechas:
         },
       ]);
     } catch (primaryErr) {
-      console.warn("Fallo con gemini-2.0-flash, reintentando con gemini-1.5-flash:", primaryErr);
+      console.warn("Fallo con gemini-2.5-flash, reintentando con gemini-2.5-pro:", primaryErr);
       const fallbackModel = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
+        model: "gemini-2.5-pro",
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: schemaConfig,
