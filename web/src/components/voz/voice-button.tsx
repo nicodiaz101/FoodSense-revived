@@ -46,10 +46,29 @@ export function VoiceButton({ onAction }: Props) {
         try {
           const audio_base64 = await blobToBase64(blob);
           const mime_type = recorder.mimeType || "audio/webm";
+
+          // Obtenemos el token de sesión de Firebase
+          const { auth } = await import("@/lib/firebase");
+          const currentUser = auth.currentUser;
+          if (!currentUser) {
+            throw new Error("Tenés que iniciar sesión para usar el comando de voz.");
+          }
+          const idToken = await currentUser.getIdToken();
+
+          // Obtenemos la fecha local del dispositivo (YYYY-MM-DD) para evitar desfase horario con UTC
+          const now = new Date();
+          const localYear = now.getFullYear();
+          const localMonth = String(now.getMonth() + 1).padStart(2, "0");
+          const localDay = String(now.getDate()).padStart(2, "0");
+          const client_date = `${localYear}-${localMonth}-${localDay}`;
+
           const res = await fetch("/api/voice/actions", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ audio_base64, mime_type }),
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${idToken}`,
+            },
+            body: JSON.stringify({ audio_base64, mime_type, client_date }),
           });
           if (!res.ok) {
             const errData = await res.json().catch(() => null);
