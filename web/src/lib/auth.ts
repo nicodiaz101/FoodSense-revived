@@ -104,7 +104,7 @@ export async function registerUser(
         email: user.email!,
         nombre: nombre.trim(),
         provider: "password",
-        emailVerified: true,
+        emailVerified: user.emailVerified,
       },
     };
   } catch (e: unknown) {
