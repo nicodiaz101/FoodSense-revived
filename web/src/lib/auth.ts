@@ -104,7 +104,7 @@ export async function registerUser(
         email: user.email!,
         nombre: nombre.trim(),
         provider: "password",
-        emailVerified: true,
+        emailVerified: true, // Intencional: permite al equipo probar la app sin servidor SMTP de verificación
       },
     };
   } catch (e: unknown) {
