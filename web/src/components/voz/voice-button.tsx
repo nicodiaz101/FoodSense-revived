@@ -51,7 +51,10 @@ export function VoiceButton({ onAction }: Props) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ audio_base64, mime_type }),
           });
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          if (!res.ok) {
+            const errData = await res.json().catch(() => null);
+            throw new Error(errData?.error || `Error del servidor (HTTP ${res.status})`);
+          }
           const body = await res.json();
           const ops: VoiceAction[] = Array.isArray(body?.resultado?.operaciones)
             ? body.resultado.operaciones
@@ -59,8 +62,9 @@ export function VoiceButton({ onAction }: Props) {
           const transcripcion: string | undefined = body?.transcripcion;
           setRecState("idle");
           onAction(ops, transcripcion);
-        } catch {
-          setErrorMsg("No se pudo procesar el audio. Intentá de nuevo.");
+        } catch (err) {
+          console.error("Error al procesar audio:", err);
+          setErrorMsg(err instanceof Error ? err.message : "No se pudo procesar el audio.");
           setRecState("error");
         }
       };
@@ -86,17 +90,41 @@ export function VoiceButton({ onAction }: Props) {
     <div className="flex flex-col items-center gap-3">
       <button
         type="button"
-        disabled
-        aria-label="Comando de voz disponible muy pronto"
-        title="Próximamente disponible"
-        className="relative flex h-[52px] w-full items-center justify-center gap-2.5 rounded-[16px] border border-border/60 bg-surface/50 text-ink-mute text-[15px] font-semibold opacity-70 cursor-not-allowed shadow-none"
+        onClick={isRecording ? stopRecording : startRecording}
+        disabled={isProcessing}
+        aria-label={isRecording ? "Detener grabación" : "Grabar comando de voz con Gemini"}
+        className={`relative flex h-[52px] w-full items-center justify-center gap-2.5 rounded-[16px] text-[15px] font-semibold transition-all disabled:opacity-50 ${
+          isRecording
+            ? "bg-[#D85B4A] text-white"
+            : isError
+              ? "border border-[#D85B4A] bg-[#FADDD6] text-[#D85B4A]"
+              : "border border-border bg-surface text-ink shadow-sm hover:border-emerald-500/50 hover:bg-surface-alt"
+        }`}
       >
-        <Icon name="mic" size={20} color="#9CA3AF" strokeWidth={2} />
-        <span>Muy pronto: comando de voz</span>
-        <span className="ml-1 rounded-full bg-surface-alt px-2 py-0.5 text-[10px] font-medium tracking-wide text-ink-mute uppercase">
-          Próximamente
-        </span>
+        {isProcessing ? (
+          <>
+            <Spinner />
+            <span>Procesando con Gemini…</span>
+          </>
+        ) : isRecording ? (
+          <>
+            <span className="relative flex h-3 w-3">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-60" />
+              <span className="relative inline-flex h-3 w-3 rounded-full bg-white" />
+            </span>
+            <span>Grabando… tocá para detener</span>
+          </>
+        ) : (
+          <>
+            <Icon name="mic" size={20} color={isError ? "#D85B4A" : "#2F8F5C"} strokeWidth={2} />
+            <span>{isError ? "Reintentar comando de voz" : "Comando de voz (IA Gemini)"}</span>
+          </>
+        )}
       </button>
+
+      {isError && errorMsg && (
+        <p className="text-center text-[12px] text-[#D85B4A]">{errorMsg}</p>
+      )}
     </div>
   );
 }
