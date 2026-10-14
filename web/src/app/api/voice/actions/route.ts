@@ -142,9 +142,9 @@ Reglas de fechas:
         },
       ]);
     } catch (primaryErr) {
-      console.warn("Fallo con gemini-3.7-flash, reintentando con gemini-3.5-flash:", primaryErr);
+      console.warn("Fallo con gemini-3.7-flash, reintentando con gemini-3.5-flash-lite:", primaryErr);
       const fallbackModel = genAI.getGenerativeModel({
-        model: "gemini-3.5-flash",
+        model: "gemini-3.5-flash-lite",
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: schemaConfig,
