@@ -1,14 +1,18 @@
 importScripts("https://www.gstatic.com/firebasejs/12.14.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/12.14.0/firebase-messaging-compat.js");
 
-firebase.initializeApp({
-  apiKey: "AIzaSyCRalCf85TZ2fiLR9Qt6jzfGFCPtw-yP-c",
-  authDomain: "foodsense-c426d.firebaseapp.com",
-  projectId: "foodsense-c426d",
-  storageBucket: "foodsense-c426d.firebasestorage.app",
-  messagingSenderId: "456940297073",
-  appId: "1:456940297073:web:01d91bef7aa4090ec774d0",
-});
+// Configuración dinámica por URL params o fallback al proyecto foodsense-revive
+const urlParams = new URL(location.href).searchParams;
+const firebaseConfig = {
+  apiKey: urlParams.get("apiKey") || "AIzaSyChxgGBbkGYc4H0LdMaeEqoVikZ_dTLdro",
+  authDomain: urlParams.get("authDomain") || "foodsense-revive.firebaseapp.com",
+  projectId: urlParams.get("projectId") || "foodsense-revive",
+  storageBucket: urlParams.get("storageBucket") || "foodsense-revive.firebasestorage.app",
+  messagingSenderId: urlParams.get("messagingSenderId") || "392452066897",
+  appId: urlParams.get("appId") || "1:392452066897:web:d82ad5a7138f3e926b7270",
+};
+
+firebase.initializeApp(firebaseConfig);
 
 const messaging = firebase.messaging();
 
