@@ -1,7 +1,7 @@
-import { createRemoteJWKSet, jwtVerify } from "jose";
+import { createRemoteJWKSet, jwtVerify, decodeJwt } from "jose";
 
 const FIREBASE_JWKS_URL = new URL(
-  "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com"
+  "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
 );
 
 // JWKS remoto cacheado automáticamente por jose
@@ -19,13 +19,15 @@ export interface VerifiedFirebaseUser {
 export async function verifyFirebaseIdToken(
   token: string
 ): Promise<VerifiedFirebaseUser | null> {
-  const projectId =
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "foodsense-revive";
+  const configuredProjectId = (
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "foodsense-revive"
+  ).trim();
 
   try {
-    const { payload } = await jwtVerify(token, JWKS, {
-      issuer: `https://securetoken.google.com/${projectId}`,
-      audience: projectId,
+    const cleanToken = token.trim();
+    const { payload } = await jwtVerify(cleanToken, JWKS, {
+      issuer: `https://securetoken.google.com/${configuredProjectId}`,
+      audience: configuredProjectId,
     });
 
     if (!payload.sub) {
@@ -37,7 +39,16 @@ export async function verifyFirebaseIdToken(
       email: typeof payload.email === "string" ? payload.email : undefined,
     };
   } catch (err) {
-    console.warn("[verifyFirebaseIdToken] Falló validación de token:", err);
+    console.error("[verifyFirebaseIdToken] Error validando token:", err);
+    try {
+      const decoded = decodeJwt(token);
+      console.warn("[verifyFirebaseIdToken] Claims recibidos:", {
+        iss: decoded.iss,
+        aud: decoded.aud,
+        sub: decoded.sub,
+        configuredProjectId,
+      });
+    } catch {}
     return null;
   }
 }

@@ -53,7 +53,8 @@ export function VoiceButton({ onAction }: Props) {
           if (!currentUser) {
             throw new Error("Tenés que iniciar sesión para usar el comando de voz.");
           }
-          const idToken = await currentUser.getIdToken();
+          // Forzar refresh si el token está próximo a expirar o expiró
+          const idToken = await currentUser.getIdToken(true);
 
           // Obtenemos la fecha local del dispositivo (YYYY-MM-DD) para evitar desfase horario con UTC
           const now = new Date();
