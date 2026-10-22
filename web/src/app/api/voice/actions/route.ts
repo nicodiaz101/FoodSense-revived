@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
     };
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-3.8-flash",
+      model: "gemini-3.5-flash-lite",
       generationConfig: fastGenerationConfig as unknown as GenerationConfig,
     });
 
@@ -189,9 +189,9 @@ Reglas de fechas:
         },
       ]);
     } catch (primaryErr) {
-      console.warn("Fallo con gemini-3.8-flash, reintentando con gemini-3.5-flash-lite:", primaryErr);
+      console.warn("Fallo con gemini-3.5-flash-lite, reintentando con gemini-3.8-flash:", primaryErr);
       const fallbackModel = genAI.getGenerativeModel({
-        model: "gemini-3.5-flash-lite",
+        model: "gemini-3.8-flash",
         generationConfig: fastGenerationConfig as unknown as GenerationConfig,
       });
       result = await fallbackModel.generateContent([
