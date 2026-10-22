@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI, SchemaType, Schema } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType, Schema, GenerationConfig } from "@google/generative-ai";
 import { verifyFirebaseIdToken } from "@/lib/server-auth";
 
 const MAX_AUDIO_BASE64_LENGTH = 3 * 1024 * 1024; // ~2.2 MB binario, sobrado para 1 min de voz
+
+// Configuración de Vercel para permitir hasta 30s de ejecución en llamadas de IA
+export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
   try {
@@ -138,12 +141,18 @@ export async function POST(req: NextRequest) {
     };
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-3.7-flash",
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: schemaConfig,
+    const fastGenerationConfig = {
+      responseMimeType: "application/json",
+      responseSchema: schemaConfig,
+      // Desactivamos el pensamiento extendido ("thinking") para obtener respuesta estructurada directa y rápida
+      thinkingConfig: {
+        thinkingBudget: 0,
       },
+    };
+
+    const model = genAI.getGenerativeModel({
+      model: "gemini-3.8-flash",
+      generationConfig: fastGenerationConfig as unknown as GenerationConfig,
     });
 
     const todayISO =
@@ -180,13 +189,10 @@ Reglas de fechas:
         },
       ]);
     } catch (primaryErr) {
-      console.warn("Fallo con gemini-3.7-flash, reintentando con gemini-3.5-flash-lite:", primaryErr);
+      console.warn("Fallo con gemini-3.8-flash, reintentando con gemini-3.5-flash-lite:", primaryErr);
       const fallbackModel = genAI.getGenerativeModel({
         model: "gemini-3.5-flash-lite",
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: schemaConfig,
-        },
+        generationConfig: fastGenerationConfig as unknown as GenerationConfig,
       });
       result = await fallbackModel.generateContent([
         systemPrompt,

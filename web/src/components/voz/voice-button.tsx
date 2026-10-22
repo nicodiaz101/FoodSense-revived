@@ -63,25 +63,39 @@ export function VoiceButton({ onAction }: Props) {
           const localDay = String(now.getDate()).padStart(2, "0");
           const client_date = `${localYear}-${localMonth}-${localDay}`;
 
-          const res = await fetch("/api/voice/actions", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${idToken}`,
-            },
-            body: JSON.stringify({ audio_base64, mime_type, client_date }),
-          });
-          if (!res.ok) {
-            const errData = await res.json().catch(() => null);
-            throw new Error(errData?.error || `Error del servidor (HTTP ${res.status})`);
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 28000);
+
+          try {
+            const res = await fetch("/api/voice/actions", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${idToken}`,
+              },
+              body: JSON.stringify({ audio_base64, mime_type, client_date }),
+              signal: controller.signal,
+            });
+            clearTimeout(timeoutId);
+
+            if (!res.ok) {
+              const errData = await res.json().catch(() => null);
+              throw new Error(errData?.error || `Error del servidor (HTTP ${res.status})`);
+            }
+            const body = await res.json();
+            const ops: VoiceAction[] = Array.isArray(body?.resultado?.operaciones)
+              ? body.resultado.operaciones
+              : [body];
+            const transcripcion: string | undefined = body?.transcripcion;
+            setRecState("idle");
+            onAction(ops, transcripcion);
+          } catch (fetchErr: unknown) {
+            clearTimeout(timeoutId);
+            if (fetchErr instanceof Error && fetchErr.name === "AbortError") {
+              throw new Error("El procesamiento de audio tardó más de lo esperado. Por favor reintentá con una frase más corta.");
+            }
+            throw fetchErr;
           }
-          const body = await res.json();
-          const ops: VoiceAction[] = Array.isArray(body?.resultado?.operaciones)
-            ? body.resultado.operaciones
-            : [body];
-          const transcripcion: string | undefined = body?.transcripcion;
-          setRecState("idle");
-          onAction(ops, transcripcion);
         } catch (err) {
           console.error("Error al procesar audio:", err);
           setErrorMsg(err instanceof Error ? err.message : "No se pudo procesar el audio.");
