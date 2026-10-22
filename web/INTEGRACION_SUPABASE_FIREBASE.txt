@@ -68,7 +68,7 @@ tu proyecto de Firebase.
 3. Seleccionar "Firebase".
 
 4. Ingresar el Project ID de Firebase:
-   foodsense-c426d
+   foodsense-revive
 
 5. Guardar / Enable.
 
@@ -77,7 +77,7 @@ tu proyecto de Firebase.
 
    [auth.third_party.firebase]
    enabled = true
-   project_id = "foodsense-c426d"
+   project_id = "foodsense-revive"
 
 
 ────────────────────────────────────────────────────────────────
@@ -154,7 +154,7 @@ No hay cambios en Firebase. Solo verificar que el proyecto
 sigue activo:
 
 1. Ir a https://console.firebase.google.com
-2. Seleccionar el proyecto foodsense-c426d
+2. Seleccionar el proyecto foodsense-revive
 3. Authentication → Sign-in method
 4. Confirmar que Email/Password y Google están habilitados
 
