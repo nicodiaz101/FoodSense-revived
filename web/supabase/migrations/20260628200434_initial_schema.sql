@@ -7,11 +7,11 @@
 create table if not exists products (
   id         uuid        primary key default gen_random_uuid(),
   user_id    text        not null,
-  name       text        not null,
-  category   text        not null,
-  state      text        not null,
+  name       text        not null check (char_length(trim(name)) between 1 and 100),
+  category   text        not null check (category in ('lacteos', 'carnes', 'verduras', 'frutas', 'panificados', 'bebidas', 'huevos', 'conservas')),
+  state      text        not null check (state in ('abierto', 'cerrado', 'congelado')),
   expires_at date        not null,
-  quantity   integer,
+  quantity   integer     check (quantity is null or (quantity >= 1 and quantity <= 9999)),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

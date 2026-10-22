@@ -1,0 +1,137 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: notificationTokens
+    // Document ID: {tokenId} formatted as `${uid}_${token}`
+    // Fields:
+    //   - uid: string (required, 1-128 chars, matches request.auth.uid) - Owner's Firebase Auth UID
+    //   - email: string (required, valid email pattern, 5-254 chars) - Owner's email address
+    //   - token: string (required, 10-500 chars) - Web push FCM registration token
+    //   - enabled: bool (required) - Notification active status
+    //   - userAgent: string (required, 1-500 chars) - Client browser user agent
+    //   - createdAt: timestamp (required) - Timestamp when token was registered
+    //   - updatedAt: timestamp (required) - Timestamp of last status or token update
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    // Check if the user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Check if user owns the resource by specified userId
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Check if user owns the document based on existing resource data
+    function isDocOwner() {
+      return isAuthenticated() && resource.data.uid == request.auth.uid;
+    }
+
+    // Verify UID matches authenticated user on write
+    function uidUnchanged() {
+      return !('uid' in request.resource.data) ||
+        request.resource.data.uid == request.auth.uid;
+    }
+
+    // Ensure UID field is not modified on update
+    function uidNotModified() {
+      return !('uid' in request.resource.data) ||
+        request.resource.data.uid == resource.data.uid;
+    }
+
+    // Validate that document has all required fields
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    // Validate that document contains only allowed fields (no schema pollution)
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // Validate that immutable fields remain unchanged
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    // Validate email format
+    function isValidEmail(email) {
+      return email is string &&
+        email.size() >= 5 &&
+        email.size() <= 254 &&
+        email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // Validate string length bounds
+    function isValidString(val, minLen, maxLen) {
+      return val is string &&
+        val.size() >= minLen &&
+        val.size() <= maxLen;
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    // Validate notification token document schema and invariants
+    function isValidNotificationToken(data) {
+      return hasOnlyAllowedFields(['uid', 'email', 'token', 'enabled', 'userAgent', 'createdAt', 'updatedAt']) &&
+        hasRequiredFields(['uid', 'email', 'token', 'enabled', 'userAgent', 'createdAt', 'updatedAt']) &&
+        isValidString(data.uid, 1, 128) &&
+        data.uid == request.auth.uid &&
+        isValidEmail(data.email) &&
+        isValidString(data.token, 10, 500) &&
+        data.enabled is bool &&
+        isValidString(data.userAgent, 1, 500) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    match /notificationTokens/{tokenId} {
+      // Document owner can read their own notification token document
+      allow get: if isDocOwner();
+
+      // Collection listing is strictly forbidden to prevent user/token enumeration
+      allow list: if false;
+
+      // Create: Authenticated users can only create their own token document
+      allow create: if isAuthenticated() &&
+        request.resource.data.uid == request.auth.uid &&
+        isValidNotificationToken(request.resource.data) &&
+        tokenId.size() >= 10 &&
+        tokenId.size() <= 256 &&
+        tokenId.matches("^" + request.auth.uid + "_.*");
+
+      // Update: Authenticated owner can only update their own token document,
+      // maintaining strict data validation and immutable ownership.
+      allow update: if isDocOwner() &&
+        uidNotModified() &&
+        request.resource.data.uid == request.auth.uid &&
+        isValidNotificationToken(request.resource.data);
+
+      // Delete: Document owner can delete their notification token registration
+      allow delete: if isDocOwner();
+    }
+
+    // Default deny for all other paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
