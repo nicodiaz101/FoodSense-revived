@@ -141,18 +141,14 @@ export async function POST(req: NextRequest) {
     };
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const fastGenerationConfig = {
+    const generationConfig: GenerationConfig = {
       responseMimeType: "application/json",
       responseSchema: schemaConfig,
-      // Desactivamos el pensamiento extendido ("thinking") para obtener respuesta estructurada directa y rápida
-      thinkingConfig: {
-        thinkingBudget: 0,
-      },
     };
 
     const model = genAI.getGenerativeModel({
       model: "gemini-3.5-flash-lite",
-      generationConfig: fastGenerationConfig as unknown as GenerationConfig,
+      generationConfig,
     });
 
     const todayISO =
@@ -192,7 +188,7 @@ Reglas de fechas:
       console.warn("Fallo con gemini-3.5-flash-lite, reintentando con gemini-3.8-flash:", primaryErr);
       const fallbackModel = genAI.getGenerativeModel({
         model: "gemini-3.8-flash",
-        generationConfig: fastGenerationConfig as unknown as GenerationConfig,
+        generationConfig,
       });
       result = await fallbackModel.generateContent([
         systemPrompt,
