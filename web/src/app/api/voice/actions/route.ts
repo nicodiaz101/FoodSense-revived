@@ -185,10 +185,17 @@ Reglas de fechas:
         },
       ]);
     } catch (primaryErr) {
-      console.warn("Fallo con gemini-3.5-flash-lite, reintentando con gemini-3.1-flash-lite:", primaryErr);
+      console.warn("Fallo con gemini-3.5-flash-lite, reintentando con gemini-3.8-flash (thinkingLevel: low):", primaryErr);
+      const fallbackGenerationConfig = {
+        responseMimeType: "application/json",
+        responseSchema: schemaConfig,
+        thinkingConfig: {
+          thinkingLevel: "low",
+        },
+      };
       const fallbackModel = genAI.getGenerativeModel({
-        model: "gemini-3.1-flash-lite",
-        generationConfig,
+        model: "gemini-3.8-flash",
+        generationConfig: fallbackGenerationConfig as unknown as GenerationConfig,
       });
       result = await fallbackModel.generateContent([
         systemPrompt,
