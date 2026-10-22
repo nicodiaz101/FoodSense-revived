@@ -314,6 +314,7 @@ export function VoiceActionModal({
                         <input
                           type="text"
                           value={op.producto}
+                          maxLength={60}
                           onChange={(e) => updateOp(idx, { producto: e.target.value })}
                           placeholder="nombre del producto"
                           className="min-w-0 flex-1 rounded-lg border border-border bg-bg px-2 py-1.5 text-[13px] font-semibold text-ink"
@@ -361,6 +362,7 @@ export function VoiceActionModal({
                         <input
                           type="text"
                           value={op.producto}
+                          maxLength={60}
                           onChange={(e) =>
                             updateOp(idx, {
                               producto: e.target.value,

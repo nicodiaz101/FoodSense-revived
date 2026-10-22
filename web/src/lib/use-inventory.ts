@@ -110,29 +110,48 @@ export function useInventory() {
 
   async function consume(id: string) {
     const uid = auth.currentUser?.uid;
+    const previousProducts = products;
     setProducts((prev) => prev.filter((p) => p.id !== id));
     setConsumedThisMonth((c) => c + 1);
-    await Promise.all([
-      supabase.from("products").delete().eq("id", id),
-      uid
-        ? supabase.from("product_events").insert({ user_id: uid, type: "consumed" })
-        : Promise.resolve(),
-    ]);
+
+    try {
+      const { error: delError } = await supabase.from("products").delete().eq("id", id);
+      if (delError) throw delError;
+
+      if (uid) {
+        await supabase.from("product_events").insert({ user_id: uid, type: "consumed" });
+      }
+    } catch (err) {
+      console.error("[useInventory] Error consumiendo producto:", err);
+      setProducts(previousProducts);
+      setConsumedThisMonth((c) => Math.max(0, c - 1));
+      throw err;
+    }
   }
 
   async function remove(id: string) {
     const uid = auth.currentUser?.uid;
+    const previousProducts = products;
     setProducts((prev) => prev.filter((p) => p.id !== id));
     setWastedThisMonth((w) => w + 1);
-    await Promise.all([
-      supabase.from("products").delete().eq("id", id),
-      uid
-        ? supabase.from("product_events").insert({ user_id: uid, type: "wasted" })
-        : Promise.resolve(),
-    ]);
+
+    try {
+      const { error: delError } = await supabase.from("products").delete().eq("id", id);
+      if (delError) throw delError;
+
+      if (uid) {
+        await supabase.from("product_events").insert({ user_id: uid, type: "wasted" });
+      }
+    } catch (err) {
+      console.error("[useInventory] Error eliminando producto:", err);
+      setProducts(previousProducts);
+      setWastedThisMonth((w) => Math.max(0, w - 1));
+      throw err;
+    }
   }
 
   async function updateProduct(id: string, changes: Partial<Product>) {
+    const previousProducts = products;
     setProducts((prev) =>
       prev.map((p) => (p.id === id ? { ...p, ...changes } : p)),
     );
@@ -144,7 +163,15 @@ export function useInventory() {
     if (changes.daysUntilExpiry !== undefined) {
       dbChanges.expires_at = toExpiresAt(changes.daysUntilExpiry);
     }
-    await supabase.from("products").update(dbChanges).eq("id", id);
+
+    try {
+      const { error: updateError } = await supabase.from("products").update(dbChanges).eq("id", id);
+      if (updateError) throw updateError;
+    } catch (err) {
+      console.error("[useInventory] Error actualizando producto:", err);
+      setProducts(previousProducts);
+      throw err;
+    }
   }
 
   return {

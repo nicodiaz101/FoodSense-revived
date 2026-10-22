@@ -17,9 +17,14 @@ interface Props {
 type ScanStatus = "scanning" | "loading" | "not_found" | "error";
 
 async function lookupBarcode(barcode: string): Promise<BarcodeScanResult | null> {
+  const trimmed = barcode.trim();
+  if (!/^[A-Za-z0-9_-]{3,48}$/.test(trimmed)) {
+    return null;
+  }
+
   try {
     const res = await fetch(
-      `https://world.openfoodfacts.org/api/v2/product/${barcode}.json?fields=product_name,product_name_es,categories_tags`,
+      `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(trimmed)}.json?fields=product_name,product_name_es,categories_tags`,
       { signal: AbortSignal.timeout(8000) },
     );
     if (!res.ok) return null;

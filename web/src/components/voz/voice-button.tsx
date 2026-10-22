@@ -46,22 +46,56 @@ export function VoiceButton({ onAction }: Props) {
         try {
           const audio_base64 = await blobToBase64(blob);
           const mime_type = recorder.mimeType || "audio/webm";
-          const res = await fetch("/api/voice/actions", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ audio_base64, mime_type }),
-          });
-          if (!res.ok) {
-            const errData = await res.json().catch(() => null);
-            throw new Error(errData?.error || `Error del servidor (HTTP ${res.status})`);
+
+          // Obtenemos el token de sesión de Firebase
+          const { auth } = await import("@/lib/firebase");
+          const currentUser = auth.currentUser;
+          if (!currentUser) {
+            throw new Error("Tenés que iniciar sesión para usar el comando de voz.");
           }
-          const body = await res.json();
-          const ops: VoiceAction[] = Array.isArray(body?.resultado?.operaciones)
-            ? body.resultado.operaciones
-            : [body];
-          const transcripcion: string | undefined = body?.transcripcion;
-          setRecState("idle");
-          onAction(ops, transcripcion);
+          // Forzar refresh si el token está próximo a expirar o expiró
+          const idToken = await currentUser.getIdToken(true);
+
+          // Obtenemos la fecha local del dispositivo (YYYY-MM-DD) para evitar desfase horario con UTC
+          const now = new Date();
+          const localYear = now.getFullYear();
+          const localMonth = String(now.getMonth() + 1).padStart(2, "0");
+          const localDay = String(now.getDate()).padStart(2, "0");
+          const client_date = `${localYear}-${localMonth}-${localDay}`;
+
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 28000);
+
+          try {
+            const res = await fetch("/api/voice/actions", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${idToken}`,
+              },
+              body: JSON.stringify({ audio_base64, mime_type, client_date }),
+              signal: controller.signal,
+            });
+            clearTimeout(timeoutId);
+
+            if (!res.ok) {
+              const errData = await res.json().catch(() => null);
+              throw new Error(errData?.error || `Error del servidor (HTTP ${res.status})`);
+            }
+            const body = await res.json();
+            const ops: VoiceAction[] = Array.isArray(body?.resultado?.operaciones)
+              ? body.resultado.operaciones
+              : [body];
+            const transcripcion: string | undefined = body?.transcripcion;
+            setRecState("idle");
+            onAction(ops, transcripcion);
+          } catch (fetchErr: unknown) {
+            clearTimeout(timeoutId);
+            if (fetchErr instanceof Error && fetchErr.name === "AbortError") {
+              throw new Error("El procesamiento de audio tardó más de lo esperado. Por favor reintentá con una frase más corta.");
+            }
+            throw fetchErr;
+          }
         } catch (err) {
           console.error("Error al procesar audio:", err);
           setErrorMsg(err instanceof Error ? err.message : "No se pudo procesar el audio.");

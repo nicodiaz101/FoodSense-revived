@@ -1,8 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI, SchemaType, Schema } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType, Schema, GenerationConfig } from "@google/generative-ai";
+import { verifyFirebaseIdToken } from "@/lib/server-auth";
+
+const MAX_AUDIO_BASE64_LENGTH = 3 * 1024 * 1024; // ~2.2 MB binario, sobrado para 1 min de voz
+
+// Configuración de Vercel para permitir hasta 30s de ejecución en llamadas de IA
+export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
   try {
+    // 1. Validar autenticación con Firebase ID Token
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return NextResponse.json(
+        { error: "No autorizado. Se requiere iniciar sesión para usar comandos de voz." },
+        { status: 401 }
+      );
+    }
+
+    const token = authHeader.split("Bearer ")[1]?.trim();
+    const verifiedUser = await verifyFirebaseIdToken(token);
+    if (!verifiedUser) {
+      return NextResponse.json(
+        { error: "Sesión inválida o expirada. Por favor reingresá a la app." },
+        { status: 401 }
+      );
+    }
+
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
@@ -13,13 +37,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json();
-    const { audio_base64, mime_type } = body;
-
-    if (!audio_base64) {
+    const body = await req.json().catch(() => null);
+    if (!body) {
       return NextResponse.json(
-        { error: "No se proporcionó audio_base64." },
+        { error: "Cuerpo de solicitud inválido." },
         { status: 400 }
+      );
+    }
+
+    const { audio_base64, mime_type, client_date } = body;
+
+    if (!audio_base64 || typeof audio_base64 !== "string") {
+      return NextResponse.json(
+        { error: "No se proporcionó audio_base64 válido." },
+        { status: 400 }
+      );
+    }
+
+    if (audio_base64.length > MAX_AUDIO_BASE64_LENGTH) {
+      return NextResponse.json(
+        { error: "El archivo de audio excede el límite permitido (~2MB)." },
+        { status: 413 }
       );
     }
 
@@ -103,15 +141,20 @@ export async function POST(req: NextRequest) {
     };
 
     const genAI = new GoogleGenerativeAI(apiKey);
+    const generationConfig: GenerationConfig = {
+      responseMimeType: "application/json",
+      responseSchema: schemaConfig,
+    };
+
     const model = genAI.getGenerativeModel({
-      model: "gemini-3.7-flash",
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: schemaConfig,
-      },
+      model: "gemini-3.5-flash-lite",
+      generationConfig,
     });
 
-    const todayISO = new Date().toISOString().split("T")[0];
+    const todayISO =
+      typeof client_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(client_date)
+        ? client_date
+        : new Date().toISOString().split("T")[0];
     const systemPrompt = `Eres el asistente de voz inteligente de FoodSense, una app de gestión de despensa y alimentos.
 Fecha actual: ${todayISO}.
 
@@ -142,13 +185,17 @@ Reglas de fechas:
         },
       ]);
     } catch (primaryErr) {
-      console.warn("Fallo con gemini-3.7-flash, reintentando con gemini-3.5-flash-lite:", primaryErr);
-      const fallbackModel = genAI.getGenerativeModel({
-        model: "gemini-3.5-flash-lite",
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: schemaConfig,
+      console.warn("Fallo con gemini-3.5-flash-lite, reintentando con gemini-3.8-flash (thinkingLevel: low):", primaryErr);
+      const fallbackGenerationConfig = {
+        responseMimeType: "application/json",
+        responseSchema: schemaConfig,
+        thinkingConfig: {
+          thinkingLevel: "low",
         },
+      };
+      const fallbackModel = genAI.getGenerativeModel({
+        model: "gemini-3.8-flash",
+        generationConfig: fallbackGenerationConfig as unknown as GenerationConfig,
       });
       result = await fallbackModel.generateContent([
         systemPrompt,
@@ -169,10 +216,7 @@ Reglas de fechas:
     console.error("[api/voice/actions] Error procesando audio con Gemini:", error);
     return NextResponse.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Error interno procesando el audio.",
+        error: "No se pudo procesar el comando de voz en este momento. Por favor intentá nuevamente.",
       },
       { status: 500 }
     );
